@@ -57,6 +57,18 @@ A table can also have a **unique constraint** on a non-PK column (e.g., "email m
 
 We design keys and constraints properly in Week 4. For now, just know that `emp_id` is the handle for a row and `manager_id` links a row to another.
 
+```mermaid
+erDiagram
+    EMPLOYEES {
+        int emp_id PK
+        int manager_id FK
+        string department
+        int salary
+    }
+    EMPLOYEES ||--o{ EMPLOYEES : manages
+```
+*The employees table links to itself: manager_id is a foreign key pointing back at emp_id.*
+
 ## 4. RDBMS — the software around the model
 
 A **Relational Database Management System (RDBMS)** is the actual program that stores your tables on disk, keeps them consistent, and runs your queries. The model is the theory; the RDBMS is the engine. Popular ones: **PostgreSQL**, **MySQL/MariaDB**, **SQLite**, **SQL Server**, **Oracle**. They all speak **SQL** (Structured Query Language), the standard language for talking to relational databases — but each dialect has quirks.
@@ -156,6 +168,15 @@ LIMIT    5;                        -- how many rows to return
 ```
 
 But the database *evaluates* them in a different order — roughly `FROM` → `WHERE` → `SELECT` → `ORDER BY` → `LIMIT`. That mismatch explains a classic beginner error: you can't use a `SELECT` alias inside `WHERE`, because `WHERE` runs before `SELECT` has computed it. We'll return to this in Lecture 2; note it now.
+
+```mermaid
+flowchart LR
+  A["FROM employees"] --> B["WHERE department equals Sales"]
+  B --> C["SELECT first_name and salary"]
+  C --> D["ORDER BY salary DESC"]
+  D --> E["LIMIT 5"]
+```
+*The engine evaluates clauses in this order, not the order you typed them in.*
 
 ## 8. Check yourself
 

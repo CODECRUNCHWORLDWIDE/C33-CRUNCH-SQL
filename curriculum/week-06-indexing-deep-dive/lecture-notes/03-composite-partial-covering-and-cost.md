@@ -104,6 +104,15 @@ You should see an **`Index Only Scan`**. The `WHERE` uses the key (`customer_id`
 
 Index-only scans have one honest catch. Indexes do **not** store row visibility (MVCC — Week 5), so to know a row is visible to your transaction, Postgres checks the table's **visibility map** — a bitmap of pages known to be all-visible. If the page is flagged all-visible, no heap fetch. If not (recently updated), Postgres must visit the heap anyway, partially defeating the point.
 
+```mermaid
+flowchart TD
+    A["Index only scan finds matching key"] --> B{"Is the heap page all visible"}
+    B -->|"Yes"| C["Answer from the index no heap fetch"]
+    B -->|"No"| D["Visit the heap page to check visibility"]
+    D --> E["Row confirmed via heap fetch"]
+```
+*An index-only scan skips the heap only when the visibility map marks the page all-visible.*
+
 Look for `Heap Fetches:` in the plan. A high number means the visibility map is stale — the fix is **`VACUUM`**, which refreshes it:
 
 ```sql
@@ -130,6 +139,15 @@ FROM generate_series(1, 100000) AS g;
 ```
 
 Drop half the indexes and repeat: the insert is measurably faster. On write-heavy tables (event ingestion, queues), each extra index is a tax on *every* write, forever.
+
+```mermaid
+flowchart TD
+    A["One INSERT statement"] --> B["Write row to the heap"]
+    A --> C["Update index 1"]
+    A --> D["Update index 2"]
+    A --> E["Update index N"]
+```
+*Every index on a table adds one more write to each insert update or delete.*
 
 ### 4b. Bloat
 

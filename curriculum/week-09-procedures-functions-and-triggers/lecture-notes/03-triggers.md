@@ -59,6 +59,20 @@ This is the single most important distinction. The trigger fires either **before
 
 The rule of thumb: **`BEFORE` to change the row that's being written; `AFTER` to react to a change that already happened.** Never try to modify `NEW` in an `AFTER` trigger — it's too late.
 
+```mermaid
+sequenceDiagram
+  participant Statement as UPDATE statement
+  participant Before as BEFORE ROW trigger
+  participant Table as Stored row
+  participant After as AFTER ROW trigger
+  Statement->>Before: fire, row not yet written
+  Before-->>Statement: return NEW modified, or NULL to skip
+  Statement->>Table: apply the write
+  Table->>After: fire, row already stored
+  After-->>Statement: return value ignored
+```
+*Timing of BEFORE and AFTER row triggers around one write.*
+
 ### Return value contract
 
 - **`BEFORE ROW`**: return `NEW` (optionally modified) to proceed, or `NULL` to silently skip this row.

@@ -95,6 +95,16 @@ A B-tree index lookup on the `orders` table is really two steps:
 
 That last step is the **heap fetch**. It matters enormously later (it is why *covering* indexes and *index-only scans* exist — Lecture 3). For now, note that an index scan touches both the index *and* the table.
 
+```mermaid
+flowchart TD
+    A["Root page"] --> B["Internal page"]
+    B --> C["Leaf page"]
+    C --> D["Read ctid pointer"]
+    D --> E["Heap page in the table"]
+    E --> F["Row returned"]
+```
+*A B-tree lookup is two steps: descend the index to a leaf, then follow the ctid pointer into the heap to fetch the row.*
+
 ### Height in practice
 
 You can see the height:
@@ -171,6 +181,16 @@ SELECT * FROM orders WHERE created_at BETWEEN '2023-01-01' AND '2023-02-01';
 ```
 
 It works in two passes: first scan the index and build an in-memory **bitmap** of which heap *pages* contain matches; then read those pages **in physical order**, turning scattered random reads into a sorted, near-sequential sweep. Seeing `Bitmap Index Scan` feeding a `Bitmap Heap Scan` is the planner telling you "the index helped narrow it down, but there were enough matches that I re-sorted the fetches for efficiency."
+
+```mermaid
+flowchart TD
+    A["Predicate arrives"] --> B{"How selective"}
+    B -->|"Highly selective"| C["Index Scan"]
+    B -->|"Medium selectivity"| D["Bitmap Index Scan"]
+    D --> E["Bitmap Heap Scan"]
+    B -->|"Poorly selective"| F["Seq Scan"]
+```
+*The planner picks Index Scan, Bitmap Heap Scan, or Seq Scan based on how many rows the predicate is expected to keep.*
 
 ## 5. Sargability: can the predicate use an index at all?
 

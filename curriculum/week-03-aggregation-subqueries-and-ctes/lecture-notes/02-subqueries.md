@@ -146,6 +146,19 @@ WHERE (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.customer_id)
 
 The first two subqueries mention `c.customer_id` → **correlated**, run per customer. The third (the average) mentions nothing outer → **independent**, run once.
 
+```mermaid
+sequenceDiagram
+  participant Outer as Outer query
+  participant Inner as Correlated subquery
+  Outer->>Inner: row 1 customer id
+  Inner-->>Outer: order count for row 1
+  Outer->>Inner: row 2 customer id
+  Inner-->>Outer: order count for row 2
+  Outer->>Inner: row N customer id
+  Inner-->>Outer: order count for row N
+```
+*A correlated subquery conceptually re-runs once per outer row, using that row's values.*
+
 A very common correlated pattern is "the latest child per parent":
 
 ```sql

@@ -87,6 +87,15 @@ The recipe has three steps, each a window function you already know:
 2. **Flag session starts** — a new session begins on the first event *or* when the gap exceeds the threshold.
 3. **Assign a session id** with a running `SUM` over those flags.
 
+```mermaid
+flowchart LR
+  A["Raw events per user"] --> B["Measure gap to previous event with LAG"]
+  B --> C["Flag new session when gap exceeds threshold"]
+  C --> D["Running SUM of flags gives session id"]
+  D --> E["Group by user and session id"]
+```
+*Sessionization is three chained window-function steps: measure, flag, then number.*
+
 ```sql
 WITH gaps AS (
   SELECT user_id, event_time,

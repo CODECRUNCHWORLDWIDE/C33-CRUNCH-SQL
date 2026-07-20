@@ -95,6 +95,20 @@ WHERE (department = 'Sales' OR department = 'Marketing') AND salary > 100000
 
 Parentheses cost nothing and prevent a whole category of silent bugs. Use them liberally.
 
+```mermaid
+flowchart TD
+  OR["OR"]
+  AND["AND"]
+  A["department equals Sales"]
+  B["department equals Marketing"]
+  C["salary greater than 100000"]
+  OR --> A
+  OR --> AND
+  AND --> B
+  AND --> C
+```
+*Without parentheses, AND binds tighter than OR — Marketing and the salary check get grouped together, not Sales and Marketing.*
+
 ### `IN` — membership in a list
 
 `IN` is cleaner than a chain of `OR`s:
@@ -242,6 +256,15 @@ LIMIT 3;
 ```
 
 Read it top to bottom in *evaluation* order and you can see exactly what the engine does.
+
+```mermaid
+flowchart LR
+  A["FROM employees"] --> B["WHERE is_remote and not Engineering"]
+  B --> C["SELECT name department salary"]
+  C --> D["ORDER BY salary and hire_date"]
+  D --> E["LIMIT 3"]
+```
+*Same five clauses as written, but run in this order — which is why a WHERE alias fails and an ORDER BY alias works.*
 
 ## 7. Check yourself
 

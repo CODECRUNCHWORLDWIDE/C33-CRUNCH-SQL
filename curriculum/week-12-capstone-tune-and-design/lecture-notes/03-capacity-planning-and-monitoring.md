@@ -107,6 +107,19 @@ This is the section juniors skip and seniors live by. Tuning is not "make it as 
 
 The checklist for *stop or continue*:
 
+```mermaid
+flowchart TD
+  A["Under budget at p95 and p99"] -->|No| F["Continue tuning"]
+  A -->|Yes| B["Headroom for 3x growth"]
+  B -->|No| F
+  B -->|Yes| C["Still a meaningful share of total time"]
+  C -->|No| D["Stop and document"]
+  C -->|Yes| E["Next fix costs more than it saves"]
+  E -->|Yes| D
+  E -->|No| F
+```
+*Four questions decide whether to keep tuning or stop and document.*
+
 - [ ] Is the query under its stated latency budget at p95 **and** p99?
 - [ ] Is there headroom for projected data growth (will it still pass at 3× rows)?
 - [ ] Is this query still a meaningful share of `total_exec_time`, or is it now noise?

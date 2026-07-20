@@ -129,6 +129,14 @@ CREATE TABLE order_items (
 
 The judgment: **`CASCADE` for "part-of" (composition) relationships, `RESTRICT`/`NO ACTION` for "refers-to" (association) relationships.** Deleting an order *should* delete its line items (they're part of it). Deleting a product that appears in past orders should *fail* — you'd be destroying order history. Getting these right prevents both orphans and accidental mass deletions.
 
+```mermaid
+flowchart TD
+    A["Is the child part of the parent"] -->|"yes"| B["ON DELETE CASCADE"]
+    A -->|"no - just refers to it"| C["ON DELETE RESTRICT"]
+    A -->|"link is optional"| D["ON DELETE SET NULL"]
+```
+*Choosing the ON DELETE action depends on whether the child is composed of the parent or merely refers to it.*
+
 ## 4. ALTER TABLE — evolving a live schema
 
 Schemas change. `ALTER TABLE` modifies an existing table without recreating it — essential because in production you can't drop and rebuild a table holding real data.

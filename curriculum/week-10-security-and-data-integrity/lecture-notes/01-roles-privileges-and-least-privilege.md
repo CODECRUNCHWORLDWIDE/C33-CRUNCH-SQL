@@ -131,6 +131,15 @@ GRANT app_read  TO reporting_svc;   -- read-only analytics service
 GRANT app_write TO web_app;         -- the app that mutates data
 ```
 
+```mermaid
+flowchart TD
+  PUBLIC["PUBLIC role"] --> app_read["app_read group NOLOGIN"]
+  app_read --> app_write["app_write group NOLOGIN"]
+  app_read --> reporting_svc["reporting_svc LOGIN"]
+  app_write --> web_app["web_app LOGIN"]
+```
+*Privileges flow downhill from PUBLIC through group roles to the login roles that actually connect.*
+
 ### Column-level grants
 
 You can grant below the table. Say `employees` has a `ssn` column analytics must never see:
@@ -190,6 +199,21 @@ When you provision access for a new service, walk this list:
 5. Did you handle **future tables** with `ALTER DEFAULT PRIVILEGES`?
 6. Did you **strip `PUBLIC`**?
 7. Is anything `SUPERUSER` or `BYPASSRLS` that doesn't need to be? Those two attributes defeat everything in Lecture 2 — audit them ruthlessly.
+
+```mermaid
+flowchart TD
+  A["New service needs access"] --> B{"Needs to log in"}
+  B -->|yes| C["LOGIN role"]
+  B -->|no| D["NOLOGIN group role"]
+  C --> E["Grant smallest verb set"]
+  D --> E
+  E --> F["Name exact objects, not ALL TABLES"]
+  F --> G["Hide sensitive columns"]
+  G --> H["Set ALTER DEFAULT PRIVILEGES"]
+  H --> I["Strip PUBLIC"]
+  I --> J["Audit SUPERUSER and BYPASSRLS"]
+```
+*Walking the least-privilege checklist as a repeatable path, not a memory test.*
 
 ## 9. Reading the grant state
 

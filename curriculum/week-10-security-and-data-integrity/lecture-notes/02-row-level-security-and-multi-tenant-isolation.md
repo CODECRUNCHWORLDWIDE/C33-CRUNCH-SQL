@@ -57,6 +57,18 @@ If `app.tenant_id` is never set, `current_setting(..., true)` returns `NULL`, th
 
 > Why `SET` and not a literal in the policy? Because one policy definition then serves all tenants. The policy is static; the *value* is per-session. `SET LOCAL` inside a transaction scopes it even more tightly (auto-resets at commit) — ideal with connection pools so a value can't leak to the next borrower of the connection.
 
+```mermaid
+sequenceDiagram
+  participant App as Application
+  participant DB as Postgres
+  App->>DB: Checkout pooled connection
+  App->>DB: SET app.tenant_id to 42
+  App->>DB: SELECT from documents
+  DB->>DB: Engine appends tenant_id equals 42
+  DB-->>App: Only tenant 42 rows returned
+```
+*The session sets who is asking once, and every later query is filtered without the app repeating a WHERE clause.*
+
 ## 4. `USING` vs `WITH CHECK` — the two halves of a policy
 
 A policy can carry two expressions, and the distinction is the single most important thing in this lecture:
@@ -134,6 +146,16 @@ CREATE POLICY hide_deleted ON documents AS RESTRICTIVE
 ```
 
 A row now passes only if it's the caller's tenant **and** it isn't soft-deleted (or the caller is admin). Reach for `RESTRICTIVE` when you have a rule that must hold *regardless* of any permissive grant.
+
+```mermaid
+flowchart TD
+  Row["Candidate row"] --> Perm{"tenant_isolation permissive: tenant matches"}
+  Perm -->|no| Hidden["Row hidden"]
+  Perm -->|yes| Rest{"hide_deleted restrictive: not archived, or admin"}
+  Rest -->|fails| Hidden
+  Rest -->|passes| Visible["Row visible"]
+```
+*A row must clear at least one permissive policy and then every restrictive policy before it's visible.*
 
 ## 7. Performance: RLS predicates are just `WHERE` clauses
 

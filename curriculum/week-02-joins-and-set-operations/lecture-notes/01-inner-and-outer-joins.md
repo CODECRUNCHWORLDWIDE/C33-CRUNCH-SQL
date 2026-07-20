@@ -33,6 +33,17 @@ JOIN orders o ON c.customer_id = o.customer_id;
 
 Hold onto this: **the join keyword picks which unmatched rows to keep; the `ON` condition picks which pairs count as a match.** Two independent decisions. Everything in this lecture is a combination of those two dials.
 
+```mermaid
+flowchart LR
+  A["7 customers"] --> C["CROSS JOIN all pairs"]
+  B["7 orders"] --> C
+  C --> D["49 pairs"]
+  D --> E["Filter by ON condition"]
+  E --> F["7 matching pairs kept"]
+  F --> G["INNER JOIN result"]
+```
+*A join is a Cartesian product narrowed down by the ON condition.*
+
 | Table sizes | `CROSS JOIN` rows | After `ON c.id = o.cid` |
 |-------------|------------------:|------------------------:|
 | 7 × 7 | 49 | 7 |
@@ -247,6 +258,15 @@ WHERE o.status = 'shipped' OR o.status IS NULL;
 ```
 
 **The rule of thumb:** conditions on the *outer* (preserved) side's optional partner belong in `ON`, not `WHERE`. A `WHERE` on a right-table column turns your outer join back into an inner join unless you explicitly spare the `NULL`s.
+
+```mermaid
+flowchart TD
+  A["LEFT JOIN keeps Gizmo Inc with a NULL order"] --> B["WHERE order status equals shipped"]
+  B --> C["NULL equals shipped evaluates to NULL"]
+  C --> D["Row is discarded"]
+  D --> E["LEFT JOIN silently behaves like INNER JOIN"]
+```
+*Filtering a right-table column in WHERE quietly undoes the LEFT JOIN's NULL-preserving row.*
 
 ## 7. Check yourself
 

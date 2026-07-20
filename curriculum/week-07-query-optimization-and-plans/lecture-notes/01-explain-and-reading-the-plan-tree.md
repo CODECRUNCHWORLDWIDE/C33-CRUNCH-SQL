@@ -15,6 +15,14 @@ When you send a `SELECT`, PostgreSQL does not just "run it." It runs a small pip
 
 The key word is *estimate*. The planner never runs your query to decide how to run it — that would be circular. Instead it guesses, using **statistics** it collected earlier about your tables. Most bad plans are bad guesses. So the whole game of optimization is: *see the plan, find the bad guess, fix the guess.*
 
+```mermaid
+flowchart LR
+  A["Parse"] --> B["Rewrite"]
+  B --> C["Plan and optimize"]
+  C --> D["Execute"]
+```
+*The four-stage pipeline every SELECT passes through before you see a row.*
+
 ## 2. The three EXPLAIN variants
 
 There are three commands you will use constantly. Know exactly what each does — the difference is not cosmetic.
@@ -105,6 +113,15 @@ Hash Join  (cost=289.00..2401.00 rows=5000 width=96)
 So you read a plan **bottom-up and inside-out**: the most-indented nodes execute first, the top node produces the final result. The top node's `rows` is your result-set size estimate; the top node's `cost` total is the whole query's estimated cost.
 
 A quick rule for the eye: find the deepest indentation, start there, walk outward.
+
+```mermaid
+flowchart TD
+  CS["Seq Scan on customers"] --> H["Hash"]
+  H --> HJ["Hash Join"]
+  OS["Seq Scan on orders"] --> HJ
+  HJ --> R["Result rows"]
+```
+*Children run first; data flows up the tree to the root node.*
 
 ## 5. Estimated vs. actual — the whole ballgame
 

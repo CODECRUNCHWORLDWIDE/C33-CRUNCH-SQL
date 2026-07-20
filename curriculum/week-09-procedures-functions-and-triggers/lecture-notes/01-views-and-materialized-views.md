@@ -145,6 +145,17 @@ Now `REFRESH ... CONCURRENTLY` works.
 
 The heuristic in one sentence: **use a materialized view when the query is expensive, it is read far more often than the data changes, and your users can tolerate the data being a few minutes (or hours) old.** A revenue dashboard refreshed every 15 minutes is a perfect fit. A bank balance is not — never materialize something that must be exactly current.
 
+```mermaid
+flowchart TD
+  A["Need to run this query"] --> B{"Expensive, and read far more than data changes?"}
+  B -- No --> C["Use a view"]
+  B -- Yes --> D{"Can readers tolerate a few minutes stale?"}
+  D -- No --> C
+  D -- Yes --> E["Use a materialized view"]
+  E --> F["Pick a refresh strategy: scheduled, on demand, or trigger driven"]
+```
+*Choosing between a plain view and a materialized view.*
+
 ## 8. Refresh strategies (preview of Challenge 1)
 
 You have three broad options for *when* to refresh, and this is a real design decision:

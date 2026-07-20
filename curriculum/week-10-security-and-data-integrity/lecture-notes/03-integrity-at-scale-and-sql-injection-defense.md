@@ -123,6 +123,19 @@ CREATE TRIGGER check_credit
 
 Triggers are more powerful but more expensive and easier to get wrong under concurrency (two simultaneous inserts can each pass the check, then jointly bust the limit — a `SELECT ... FOR UPDATE` on the customer row or `SERIALIZABLE` isolation from Week 5 closes that gap). When a plain constraint can express the rule, it is faster, declarative, and race-proof — always prefer it.
 
+```mermaid
+flowchart TD
+  Start["New data rule to enforce"] --> Q1{"About one column only"}
+  Q1 -->|yes| Check["CHECK constraint"]
+  Q1 -->|no| Q2{"Rule is no duplicates or no overlap"}
+  Q2 -->|duplicates| Unique["UNIQUE constraint"]
+  Q2 -->|overlap| Exclude["EXCLUDE constraint"]
+  Q2 -->|neither| Q3{"Needs other rows or tables"}
+  Q3 -->|yes| Trigger["Validation trigger"]
+  Q3 -->|no| Foreign["FOREIGN KEY constraint"]
+```
+*Pick the cheapest tool that can express the rule, and reach for a trigger only when nothing else can see enough.*
+
 ## 5. SQL injection — how a string becomes an exploit
 
 Now the other half of protecting data: making sure attacker input can never *become* SQL. Injection happens whenever untrusted input is **concatenated into a query string**. The canonical example:
@@ -167,6 +180,17 @@ EXECUTE find_user('any '' weird -- input');   -- treated as pure data
 ```
 
 Now `' OR '1'='1` is looked up as a literal name — the database searches for a user *named* `' OR '1'='1`, finds none, done. The apostrophes never terminate a string because there is no surrounding string to terminate. This is not merely safer; it's also usually **faster** (the plan can be cached and reused) and cleaner to read.
+
+```mermaid
+flowchart LR
+  Input["Malicious user input"] --> Concat["String concatenation"]
+  Concat --> BadSQL["Query meaning changes"]
+  BadSQL --> Leak["Data leak or dropped table"]
+  Input --> Param["Parameterized placeholder"]
+  Param --> GoodSQL["Query structure stays fixed"]
+  GoodSQL --> Safe["Treated as plain data"]
+```
+*Concatenation lets input rewrite the query; parameterization keeps input as data no matter what it contains.*
 
 ### The one place placeholders don't reach: identifiers
 

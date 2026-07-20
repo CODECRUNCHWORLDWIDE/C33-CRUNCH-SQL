@@ -43,6 +43,14 @@ SELECT xmin, xmax, ctid, * FROM demo;
 
 The `UPDATE` didn't edit the old tuple — it wrote a brand-new tuple at a new `ctid` and marked the old one's `xmax` = 1235 (that old version is now invisible to new snapshots, but it's still physically there on the page). Your current transaction id is `SELECT pg_current_xact_id();` (or the older `SELECT txid_current();`).
 
+```mermaid
+flowchart LR
+    Insert["INSERT creates v1 xmin 1234"] --> Update["UPDATE creates v2 xmin 1235"]
+    Insert --> Dead["v1 marked dead xmax set to 1235"]
+    Update --> Live["v2 is the live tuple xmax 0"]
+```
+*An UPDATE never edits in place — it writes a new tuple version and marks the old one dead.*
+
 ## 3. Snapshots and visibility
 
 A **snapshot** is Postgres's record of "which transactions had committed at the instant I took it." A tuple is visible to a snapshot, roughly, when:
@@ -150,6 +158,19 @@ ERROR:  deadlock detected
 DETAIL:  Process 123 waits for ShareLock on transaction 456; blocked by process 789.
 SQLSTATE: 40P01
 ```
+
+```mermaid
+sequenceDiagram
+    participant A as Session A
+    participant B as Session B
+    Note over A: Locks row 1
+    Note over B: Locks row 2
+    A->>B: Wants row 2 but B holds it
+    B->>A: Wants row 1 but A holds it
+    Note over A,B: Circular wait detected after one second
+    Note over A: Deadlock victim is aborted
+```
+*A and B each hold the row the other wants — Postgres detects the cycle and aborts one transaction.*
 
 The victim's transaction is rolled back; the other proceeds. Two things to internalize:
 

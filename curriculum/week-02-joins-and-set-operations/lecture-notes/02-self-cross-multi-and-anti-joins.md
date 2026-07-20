@@ -29,6 +29,16 @@ The two aliases `e` (the employee) and `m` (the manager) are what make this work
  Finn     | Ben
 ```
 
+```mermaid
+flowchart TD
+  Ada["Ada - CEO"] --> Ben["Ben"]
+  Ada --> Cy["Cy"]
+  Ben --> Dot["Dot"]
+  Ben --> Finn["Finn"]
+  Cy --> Eve["Eve"]
+```
+*employees.manager_id points back at employees.employee_id, forming this reporting hierarchy.*
+
 Ada is **missing** — she's the CEO, her `manager_id` is `NULL`, and an inner self-join drops her. To keep her, make it a `LEFT JOIN` (preserve `e`), and she appears with a `NULL` manager:
 
 ```sql
@@ -101,6 +111,16 @@ ORDER BY o.order_id, p.name;
 ```
 
 Read it as a pipeline: start with `orders`, attach the `customer`, expand to one row per `order_item`, attach each item's `product`, attach that product's `category`. Each join answers "and also give me the …".
+
+```mermaid
+flowchart LR
+  OI["order_items"] --> O["orders"]
+  O --> C["customers"]
+  O --> E["employees"]
+  OI --> P["products"]
+  P --> CAT["categories"]
+```
+*Reading a full order line chains outward from order_items through orders to customers, employees, products, and categories.*
 
 ### How to read (and write) a multi-table join
 

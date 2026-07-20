@@ -141,6 +141,20 @@ Three commands manage them:
 
 Savepoints are how a driver implements "try this statement, and if it fails, recover without losing the batch." They nest: you can set a savepoint after another savepoint. Rolling back to an outer one discards any inner ones created after it. This is exactly the mechanism behind Postgres's error recovery — internally, some drivers wrap each statement in an implicit savepoint so one failure doesn't poison the batch.
 
+```mermaid
+stateDiagram-v2
+    [*] --> Active : BEGIN
+    Active --> Committed : COMMIT
+    Active --> RolledBack : ROLLBACK
+    Active --> Aborted : statement error
+    Aborted --> RolledBack : ROLLBACK
+    Active --> Saved : SAVEPOINT name
+    Saved --> Active : ROLLBACK TO SAVEPOINT
+    Committed --> [*]
+    RolledBack --> [*]
+```
+*A transaction moves from Active to Committed or Aborted; a savepoint lets you rewind part of the work without leaving Active.*
+
 ## 5. Read-only and other transaction modes
 
 You can declare a transaction's intent, which lets the engine optimize and protects you from mistakes:

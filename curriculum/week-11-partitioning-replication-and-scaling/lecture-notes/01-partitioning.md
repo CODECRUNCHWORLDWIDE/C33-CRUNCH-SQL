@@ -14,6 +14,16 @@ A single PostgreSQL table is one logical thing but many physical files on disk (
 
 The mental model: a partitioned table is a **router**, not a storage table. It holds no rows itself. Each partition is a real table holding a disjoint slice of the data.
 
+```mermaid
+flowchart TD
+  A["INSERT INTO events"] --> B["events parent table acts as router"]
+  B -->|created_at in January| C["events 2026 01"]
+  B -->|created_at in February| D["events 2026 02"]
+  B -->|created_at in March| E["events 2026 03"]
+  B -->|no matching range| F["events default"]
+```
+*The parent table holds no rows itself — it routes each insert to the partition matching its key.*
+
 ## 2. The three partition strategies
 
 PostgreSQL supports three built-in **declarative** partitioning methods. You choose one at table-creation time based on how you query and expire the data.
@@ -135,6 +145,16 @@ Aggregate
 ```
 
 For execution-time pruning (parameterized queries), `EXPLAIN (ANALYZE)` shows lines like `Subplans Removed: 2`, telling you two partitions were skipped at run time.
+
+```mermaid
+flowchart TD
+  A["Query filters on created_at"] --> B{"Is the value a literal the planner can see"}
+  B -->|Yes| C["Plan time pruning"]
+  B -->|No, a parameter or wrapped in a function| D["Execution time pruning or none"]
+  C --> E["Only the matching partition is scanned"]
+  D --> F["Append node may scan several partitions"]
+```
+*Whether pruning fires at plan time or run time depends on when the filter value becomes known.*
 
 ### What breaks pruning
 

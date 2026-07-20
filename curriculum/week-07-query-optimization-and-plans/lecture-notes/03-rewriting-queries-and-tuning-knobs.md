@@ -10,6 +10,19 @@ You now read plans (Lecture 1) and predict them (Lecture 2). This lecture is the
 
 Reaching for #3 first is the classic junior mistake. Most "slow query" tickets are #1.
 
+```mermaid
+flowchart TD
+  Bad["Query is slow"] --> Fix["Fix the estimate"]
+  Fix --> Check1{"Plan still bad"}
+  Check1 -- No --> Done["Done"]
+  Check1 -- Yes --> Rewrite["Rewrite the query"]
+  Rewrite --> Check2{"Plan still bad"}
+  Check2 -- No --> Done
+  Check2 -- Yes --> Knob["Turn a knob"]
+  Knob --> Done
+```
+*Try the cheapest fix first; only turn a knob after ruling out bad estimates and bad SQL.*
+
 ## 1. Stale statistics — the most common bad plan
 
 The planner's estimates are only as fresh as the last `ANALYZE`. After a big data change — a bulk load, a large `DELETE`, a migration — the stats describe a table that no longer exists, and every estimate is wrong. Symptom: estimated rows off by orders of magnitude, a Nested Loop where you expected a Hash Join, a query that was fast yesterday and slow today with no code change.

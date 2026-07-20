@@ -12,6 +12,14 @@ Three lectures, three moves, in the order you should reach for them:
 
 Notice the gap replication leaves: every write still funnels to a single primary. When one machine can't hold all the data, or can't absorb the write rate no matter how big you make it, you've hit the wall replication can't climb. Sharding is the answer — and it's the most expensive, most irreversible move in the whole course. Reach for it last.
 
+```mermaid
+flowchart LR
+  A["One server, one table"] --> B["Partitioning split within one server"]
+  B --> C["Replication copy to more servers"]
+  C --> D["Sharding split data across servers"]
+```
+*The scaling ladder, cheapest and lowest-risk move first.*
+
 ## 2. Vertical vs. horizontal scaling
 
 | | **Vertical (scale up)** | **Horizontal (scale out)** |
@@ -108,6 +116,16 @@ The common misreading is "pick 2 of 3." Sharper: **partitions are a fact of dist
 
 - **CP systems** (choose consistency): during a partition, refuse requests that can't be made consistent. Example: a system that rejects writes rather than risk divergence. Traditional single-primary SQL leans CP.
 - **AP systems** (choose availability): during a partition, keep answering, accept that different nodes may temporarily disagree, and reconcile later. Example: Cassandra, DynamoDB in their default modes.
+
+```mermaid
+flowchart TD
+  A["Network partition occurs"] --> B{"Consistency or availability"}
+  B -->|Consistency| C["CP system refuses risky requests"]
+  B -->|Availability| D["AP system keeps answering, reconciles later"]
+  C --> E["Traditional single primary SQL"]
+  D --> F["Cassandra, DynamoDB default mode"]
+```
+*CAP is the choice a distributed system makes only when a partition actually happens.*
 
 ### PACELC — the part CAP leaves out
 

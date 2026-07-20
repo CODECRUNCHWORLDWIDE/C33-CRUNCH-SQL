@@ -146,6 +146,13 @@ Two things to notice:
 1. The junction table turns one M:N into **two 1:N** relationships (students→enrollments, courses→enrollments). That is *always* how M:N is implemented.
 2. The **composite primary key** `(student_id, course_id)` prevents a student from enrolling in the same course twice, and gives you a natural place to hang *relationship attributes* like `enrolled_at` and `grade` — data that belongs to the *pairing*, not to either entity alone.
 
+```mermaid
+flowchart LR
+    A["Students"] -->|"one to many"| B["Enrollments"]
+    C["Courses"] -->|"one to many"| B
+```
+*A many-to-many relationship is implemented as two one-to-many relationships meeting at a junction table.*
+
 | Cardinality | Where the FK goes | Example |
 |-------------|-------------------|---------|
 | 1:1 | On either side, made `UNIQUE` (often the PK) | user ↔ profile |

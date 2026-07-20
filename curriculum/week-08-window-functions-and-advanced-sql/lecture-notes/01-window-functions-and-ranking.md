@@ -80,6 +80,17 @@ SELECT * FROM ranked WHERE rn <= 3;
 
 That top-N-per-group pattern is one of the most-used queries in all of analytics. Burn it in.
 
+```mermaid
+flowchart TD
+  A["FROM and WHERE"] --> B["GROUP BY"]
+  B --> C["HAVING"]
+  C --> D["Window functions"]
+  D --> E["SELECT list"]
+  E --> F["ORDER BY"]
+  F --> G["LIMIT"]
+```
+*Window functions run after GROUP BY and HAVING but before ORDER BY and LIMIT, which is why WHERE can never see one.*
+
 ## 3. `PARTITION BY` vs `GROUP BY`
 
 They sound similar and are genuinely different:

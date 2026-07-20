@@ -138,6 +138,16 @@ Read it in execution order, which is *not* the written order:
 | 5 | `SELECT` | compute the output columns |
 | 6 | `ORDER BY` | sort the result |
 
+```mermaid
+flowchart TD
+  A["FROM and JOIN - assemble rows"] --> B["WHERE - drop rows"]
+  B --> C["GROUP BY - form groups"]
+  C --> D["HAVING - drop groups"]
+  D --> E["SELECT - compute columns"]
+  E --> F["ORDER BY - sort result"]
+```
+*Execution order of a GROUP BY query - not the same as the order the clauses are written in.*
+
 Two consequences worth memorising:
 
 1. **Put a condition in `WHERE` whenever it looks at a plain column, not an aggregate.** `WHERE status = 'paid'` filters early, so the engine aggregates fewer rows — it is both correct and faster. Only conditions that reference an aggregate (`SUM(...) > 500`) *must* go in `HAVING`.
@@ -195,6 +205,13 @@ ORDER BY c.country, o.status;
 ```
 
 `ROLLUP (country, status)` produces, per country, one row per status **plus** a country subtotal row (where `status` is NULL), **plus** one final grand-total row (both NULL). That NULL is how you spot a subtotal — the column that was "rolled up" comes back NULL.
+
+```mermaid
+flowchart TD
+  A["Detail rows - country and status"] --> B["Country subtotal - status rolled up"]
+  B --> C["Grand total - country and status rolled up"]
+```
+*ROLLUP builds subtotals from most detailed up to the grand total, one level at a time.*
 
 Because a real NULL and a subtotal-marker NULL look identical, use the **`GROUPING()`** function to tell them apart. `GROUPING(status)` returns `1` when this row is a subtotal over `status`, `0` otherwise:
 

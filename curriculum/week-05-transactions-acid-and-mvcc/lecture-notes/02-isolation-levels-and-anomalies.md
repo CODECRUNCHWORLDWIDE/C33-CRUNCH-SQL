@@ -147,6 +147,22 @@ INSERT INTO on_call VALUES ('Alice', true), ('Bob', true);
 
 Both saw "2 on call, safe to leave," both left, **both commits succeed** — and now zero doctors are on call. No serial order (A-then-B or B-then-A) could produce that: whoever went second would have seen a count of 1 and been blocked by their own check. Their combination broke the invariant. That's a serialization anomaly (specifically write skew — they wrote *different* rows, so no lock conflicts, so REPEATABLE READ's snapshot check never fires).
 
+```mermaid
+sequenceDiagram
+    participant A as Session A
+    participant B as Session B
+    participant T as on_call table
+    A->>T: SELECT count on call is 2
+    B->>T: SELECT count on call is 2
+    Note over A,B: Both think it is safe to leave
+    A->>T: UPDATE Alice off call
+    B->>T: UPDATE Bob off call
+    A->>T: COMMIT
+    B->>T: COMMIT
+    Note over T: Zero doctors on call now
+```
+*Both sessions read a safe count before either commits — their combined writes leave nobody on call.*
+
 Now raise both to **SERIALIZABLE** and rerun. One transaction commits; the other fails at `COMMIT` with:
 
 ```

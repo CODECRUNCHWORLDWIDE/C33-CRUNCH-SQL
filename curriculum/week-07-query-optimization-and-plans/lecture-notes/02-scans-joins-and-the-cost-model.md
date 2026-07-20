@@ -34,6 +34,17 @@ Bitmap Heap Scan on orders  (cost=... rows=4200 ...)
 
 The `Recheck Cond` appears because if the bitmap grows too large it becomes "lossy" (tracks pages, not exact rows) and the condition must be re-verified per row. Bitmap scans also let PostgreSQL **combine multiple indexes** with `BitmapAnd`/`BitmapOr` — one index per condition, bitmaps merged.
 
+```mermaid
+flowchart TD
+  Q["How selective is the predicate"] --> Low["Very few rows match"]
+  Q --> Med["Some rows match"]
+  Q --> High["Most rows match"]
+  Low --> IS["Index Scan"]
+  Med --> BM["Bitmap Index Scan then Bitmap Heap Scan"]
+  High --> SS["Seq Scan"]
+```
+*Selectivity is the deciding factor among the three scan strategies.*
+
 ### Index Only Scan — the fast path
 
 If every column your query references is *in the index*, PostgreSQL can answer from the index alone and never touch the table heap:
@@ -60,6 +71,17 @@ When two tables (or a table and an intermediate result) must be combined, the pl
 | **Nested Loop** | For each row of the outer input, scan the inner input for matches | O(outer × inner), unless inner is indexed | Outer side is tiny, **or** inner side has an index on the join key |
 | **Hash Join** | Build a hash table on the smaller input, probe it with the larger | O(outer + inner), needs memory for the hash | Large, unsorted inputs joined on equality |
 | **Merge Join** | Sort both inputs on the join key, then walk them in lockstep | O(n log n) to sort + O(n) to merge | Inputs already sorted (e.g., from an index), or very large |
+
+```mermaid
+flowchart TD
+  J["Joining two inputs on the same key"] --> Tiny["Outer side is tiny or inner side is indexed"]
+  J --> Big["Both inputs large and unsorted"]
+  J --> Sorted["Both inputs already sorted on the join key"]
+  Tiny --> NL["Nested Loop"]
+  Big --> HJ["Hash Join"]
+  Sorted --> MJ["Merge Join"]
+```
+*Input size, indexing, and existing sort order decide which join algorithm wins.*
 
 ### Nested Loop
 

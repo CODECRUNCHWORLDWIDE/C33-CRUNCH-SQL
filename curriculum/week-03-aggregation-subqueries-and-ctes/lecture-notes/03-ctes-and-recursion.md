@@ -111,9 +111,27 @@ The engine runs it as a loop:
 | 4 | Repeat step 2–3 until the recursive term returns **no new rows**. |
 | 5 | Return everything accumulated in `walk`. |
 
+```mermaid
+flowchart TD
+  A["Evaluate anchor - seed rows"] --> B["Add to result set"]
+  B --> C["Run recursive term on latest rows"]
+  C --> D{"Any new rows produced"}
+  D -- Yes --> E["Add new rows to result set"]
+  E --> C
+  D -- No --> F["Return everything accumulated"]
+```
+*A recursive CTE loops between the recursive term and the growing result set until no new rows appear.*
+
 ### Example: all descendants of a category
 
 Suppose `categories` has `Electronics → Computers → Laptops`, each linked by `parent_id`. To list the whole subtree under `Electronics`:
+
+```mermaid
+flowchart TD
+  A["Electronics"] --> B["Computers"]
+  B --> C["Laptops"]
+```
+*A category tree - the recursive CTE walks from Electronics down to Laptops one level at a time.*
 
 ```sql
 WITH RECURSIVE subtree AS (

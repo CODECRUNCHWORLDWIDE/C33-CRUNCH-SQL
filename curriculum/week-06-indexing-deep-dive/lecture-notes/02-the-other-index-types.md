@@ -42,6 +42,17 @@ Since PostgreSQL 10, hash indexes are **crash-safe and WAL-logged** (before that
 
 **GIN** = Generalized Inverted iNdex. An *inverted index* maps each **key** to the list of rows that contain it — the same structure a search engine uses. It shines when a single column holds **many** searchable keys per row: the words in a document, the elements of an array, the key/value pairs of a JSONB blob.
 
+```mermaid
+flowchart LR
+    A["JSONB row payload"] --> B["Extract every key and value"]
+    B --> C["Key plan is enterprise"]
+    B --> D["Key plan is free"]
+    C --> E["Posting list of matching row ids"]
+    D --> F["Posting list of matching row ids"]
+    Q["Query payload contains plan enterprise"] --> C
+```
+*GIN stores one entry per key with the list of rows that contain it, so a containment query jumps straight to the posting list.*
+
 ### 3a. JSONB containment
 
 Recall the `events` table from the seed. Build it now if you skipped it:
@@ -185,6 +196,20 @@ How it answers: for each block range, BRIN checks "could this range contain a `c
 | Fails when | — | Data inserted in random order (min/max per range becomes the whole domain — useless) |
 
 **The correlation caveat:** if you check `SELECT correlation FROM pg_stats WHERE tablename='orders' AND attname='created_at';` and it is near ±1, BRIN will fly. Near 0, BRIN is worthless. You can restore correlation with `CLUSTER orders USING ix_orders_created_at;` (physically reorders the table — see Lecture 3 on the cost).
+
+```mermaid
+flowchart TD
+    A["What does the query need"] --> B{"Equality range or sort on a scalar"}
+    B -->|"Yes"| C["B-tree"]
+    B -->|"No"| D{"Many keys per row such as JSONB or array"}
+    D -->|"Yes"| E["GIN"]
+    D -->|"No"| F{"Overlap or nearest neighbor"}
+    F -->|"Yes"| G["GiST"]
+    F -->|"No"| H{"Huge table ordered by this column"}
+    H -->|"Yes"| I["BRIN"]
+    H -->|"No"| J["Hash equality only niche"]
+```
+*A rough decision path from query shape to the right index access method.*
 
 ## 6. A decision table you can actually use
 

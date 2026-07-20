@@ -109,6 +109,22 @@ FROM pg_stat_replication;
 
 `state = streaming` and a small `bytes_behind` means the replica is healthy and nearly caught up.
 
+```mermaid
+sequenceDiagram
+  participant Admin
+  participant Primary
+  participant Standby
+  Admin->>Primary: Create replicator role
+  Admin->>Primary: Create replication slot
+  Admin->>Standby: Run pg basebackup
+  Standby->>Primary: Request base backup, stream WAL
+  Standby->>Standby: Write standby signal and primary conninfo
+  Standby->>Primary: Connect and stream WAL continuously
+  Primary-->>Standby: Send WAL records
+  Standby->>Standby: Replay WAL, stay caught up
+```
+*The sequence of steps that turns a fresh data directory into a live streaming standby.*
+
 ## 5. Synchronous vs. asynchronous: the durability dial
 
 This is the single most important trade-off in replication, and interviewers love it.
@@ -180,6 +196,19 @@ Read replicas scale reads. **HA** is about surviving the primary dying. The movi
 - **Failover:** promoting a standby to become the new primary when the old one is gone. In PostgreSQL you promote with `pg_ctl promote` (or `SELECT pg_promote();`) — the standby stops replaying, opens for writes, and becomes the primary.
 - **The hard part is deciding *when*.** Automatic failover needs something to reliably detect the primary is dead and coordinate the promotion. Do it wrong and you get **split-brain**: two servers both think they're primary, both accept writes, and you now have two divergent databases to reconcile by hand. This is a genuine data-corruption incident.
 - **Avoiding split-brain** needs **quorum/consensus** — an odd number of voters agreeing on who's primary, plus **fencing** the old primary so it can't accept writes if it comes back.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Healthy
+  Healthy --> PrimaryDown: primary fails
+  PrimaryDown --> Election: orchestrator detects failure
+  Election --> Promote: quorum agrees on new primary
+  Promote --> Fencing: fence old primary
+  Fencing --> Healthy: new primary serving writes
+  PrimaryDown --> SplitBrain: no quorum reached
+  SplitBrain --> [*]: manual reconciliation required
+```
+*Quorum and fencing turn a dead primary into a clean promotion instead of split-brain.*
 
 This is why you **do not** hand-roll failover with a bash script and a ping check. You use an orchestrator:
 

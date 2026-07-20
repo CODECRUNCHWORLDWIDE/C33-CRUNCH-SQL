@@ -113,6 +113,20 @@ SELECT * FROM books WHERE author_id = ?;  -- 100 more queries
 
 101 round-trips where 1 would do. Each is individually fast, so `pg_stat_statements` shows a *fast mean* with a *huge call count* — exactly the "high total, high calls, low mean" row from Lecture 1. That is the fingerprint of an N+1.
 
+```mermaid
+sequenceDiagram
+  participant App
+  participant DB
+  App->>DB: Select all authors
+  DB-->>App: 100 authors returned
+  loop For each author
+    App->>DB: Select books where author id matches
+    DB-->>App: One author's books
+  end
+  Note over App,DB: 101 round trips instead of 1
+```
+*The N+1 pattern — one list query followed by a round trip per row.*
+
 **The fix** is a single set-based query — a join, or `IN (...)`, or an ORM "eager load"/`JOIN FETCH`:
 
 ```sql

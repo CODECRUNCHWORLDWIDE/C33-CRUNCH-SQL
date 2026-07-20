@@ -49,6 +49,15 @@ SUM(amount) OVER (PARTITION BY category ORDER BY id
                   ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
 ```
 
+```mermaid
+flowchart TD
+  A["Aggregate window function"] --> B{"ORDER BY present in OVER"}
+  B -- No --> C["Frame is the whole partition Same total on every row"]
+  B -- Yes --> D["Default frame is start to current row Running total"]
+  D --> E["Add an explicit frame to get the full partition total back"]
+```
+*Adding ORDER BY to an aggregate window silently switches the default frame from whole-partition to running total.*
+
 ## 3. `ROWS` vs `RANGE` vs `GROUPS`
 
 All three describe a frame, but they count differently. Suppose the current row's `ORDER BY` value has ties.

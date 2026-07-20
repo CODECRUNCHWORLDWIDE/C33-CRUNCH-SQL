@@ -239,6 +239,19 @@ CALL purge_old_logs(90);
 
 The rule: **start in SQL, escalate to PL/pgSQL only when you hit something SQL can't express.** Every line of procedural code is a line the planner can't optimize.
 
+```mermaid
+flowchart TD
+  A["New function needed"] --> B{"Just a query?"}
+  B -- Yes --> C["LANGUAGE sql"]
+  B -- No --> D{"Need variables, IF, loops, or error handling?"}
+  D -- No --> C
+  D -- Yes --> E["LANGUAGE plpgsql"]
+  E --> F{"Need to COMMIT mid-run?"}
+  F -- Yes --> G["CREATE PROCEDURE, invoke with CALL"]
+  F -- No --> H["CREATE FUNCTION"]
+```
+*Deciding which language, and function vs procedure, fits the job.*
+
 ## 9. SQLite note
 
 SQLite has **no user-defined SQL functions in pure SQL** — you register functions in the host language (Python's `create_function`, etc.), and it has no PL/pgSQL and no stored procedures. All the function work this week is PostgreSQL. Keep that boundary clear when you carry these skills to a SQLite project.

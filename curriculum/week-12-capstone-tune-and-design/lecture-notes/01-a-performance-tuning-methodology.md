@@ -14,6 +14,16 @@ measure  →  read the plan  →  change ONE thing  →  verify  →  repeat
 
 Every step matters, and skipping the first one is the classic failure. You do not get to have an opinion about what is slow until you have a number. This lecture walks the loop end to end; the exercises and the capstone make you run it for real.
 
+```mermaid
+flowchart LR
+  A["Measure"] --> B["Read the plan"]
+  B --> C["Change one thing"]
+  C --> D["Verify"]
+  D -->|Not fixed| A
+  D -->|Meets budget| E["Stop"]
+```
+*The five-step tuning loop — each pass changes exactly one thing and verifies before repeating.*
+
 | Step | Question it answers | Primary tool |
 |------|--------------------|--------------|
 | **Measure** | Which query is actually costing the most? | `pg_stat_statements` |
@@ -105,6 +115,16 @@ Execution Time: 812.9 ms
 ```
 
 Read it bottom-up (leaves first, root last). The checklist you run on every plan:
+
+```mermaid
+flowchart BT
+  L1["Seq Scan on orders"] --> J["Hash Join"]
+  L2["Seq Scan on customers"] --> H["Hash"]
+  H --> J
+  J --> S["Sort"]
+  S --> LM["Limit"]
+```
+*Execution runs bottom-up — leaves scan first, the Limit at the root returns last.*
 
 1. **Where is the time?** Look at `actual time` on each node. The `Seq Scan on orders` reading 5 million rows and throwing 4.7M away (`Rows Removed by Filter`) is the smell.
 2. **Estimate vs. reality.** Compare `rows=` (estimate) to `actual … rows=`. If they diverge by 10× or more, the planner has stale or missing statistics and is choosing a bad plan for a *good* reason — fix the stats, not the query.

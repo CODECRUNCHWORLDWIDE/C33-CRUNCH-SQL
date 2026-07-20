@@ -49,6 +49,15 @@ That last one is the crux of everything: **you cannot compare to `NULL` with `=`
 
 Ordinary boolean logic has two values: **true** and **false**. SQL has **three**: **true**, **false**, and **unknown** (which is what a `NULL` comparison produces). `WHERE` keeps a row only when its condition is **true** — rows where the condition is **false** *or* **unknown** are dropped. That single rule causes most "why did my rows disappear?" bugs.
 
+```mermaid
+flowchart TD
+  A["WHERE condition evaluated"] --> B{"Result"}
+  B -->|True| C["Row kept"]
+  B -->|False| D["Row dropped"]
+  B -->|Unknown| E["Row dropped"]
+```
+*Only true keeps a row — false and unknown both drop it, which is why NULL comparisons quietly vanish rows.*
+
 Truth tables (`U` = unknown):
 
 **AND** — false wins:
@@ -86,6 +95,16 @@ SELECT * FROM employees WHERE emp_id NOT IN (1, 2, NULL);   -- returns ZERO rows
 ```
 
 `x NOT IN (1,2,NULL)` expands to `x<>1 AND x<>2 AND x<>NULL`. That last term is `unknown`, and `something AND unknown` can never be `true` — so no row qualifies. Fix: strip `NULL`s from the list, or use `NOT EXISTS` (Week 3). This is one of the most infamous SQL traps in existence.
+
+```mermaid
+flowchart LR
+  A["x not equal 1"] --> D["AND"]
+  B["x not equal 2"] --> D
+  C["x not equal NULL is Unknown"] --> D
+  D --> E["Combined result is Unknown"]
+  E --> F["NOT IN returns zero rows"]
+```
+*One Unknown term in the AND chain poisons the whole condition, so every row gets dropped.*
 
 **Gotcha 3 — aggregates ignore `NULL`.** `AVG(commission_pct)` averages only the non-NULL commissions (the Sales people), *not* over all 30 employees. `COUNT(commission_pct)` counts non-NULL values; `COUNT(*)` counts rows. Different answers, same-looking query. (Full treatment in Week 3 — flagged now so it doesn't surprise you.)
 

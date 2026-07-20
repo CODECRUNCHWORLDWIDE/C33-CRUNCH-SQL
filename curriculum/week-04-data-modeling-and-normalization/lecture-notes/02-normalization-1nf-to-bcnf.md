@@ -186,6 +186,14 @@ Now every FD's left side is a key. BCNF achieved.
 
 Mnemonic for 2NF + 3NF: **every non-key column depends on _the key, the whole key, and nothing but the key_.** "The whole key" is 2NF (no *part* of the key). "Nothing but the key" is 3NF (no *other non-key* column).
 
+```mermaid
+flowchart TD
+    A["1NF - atomic columns"] --> B["2NF - no partial dependency"]
+    B --> C["3NF - no transitive dependency"]
+    C --> D["BCNF - every determinant is a key"]
+```
+*Each higher normal form assumes the ones before it and removes one more class of redundancy.*
+
 There are higher forms (4NF handles multi-valued dependencies, 5NF handles join dependencies), briefly noted in Lecture 3's further reading. They matter rarely; 3NF/BCNF is where the daily work lives.
 
 ## 8. Worked example — normalizing the courses table all the way

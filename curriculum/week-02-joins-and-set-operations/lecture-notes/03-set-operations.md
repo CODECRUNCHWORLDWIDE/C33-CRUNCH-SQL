@@ -178,6 +178,17 @@ WHERE c.customer_id IS NULL;                          -- keep ONLY the right-onl
 
 The `UNION` de-dups the overlap; the `WHERE … IS NULL` on the second branch adds only the rows the `LEFT JOIN` couldn't reach. On engines without `RIGHT JOIN` either, swap the tables in the second branch. This recipe is worth recognizing because you'll meet it in older codebases.
 
+```mermaid
+flowchart TD
+  A["LEFT JOIN customers to regions"] --> B["All customers plus matched regions"]
+  C["RIGHT JOIN customers to regions"] --> D["Keep only rows where customer is NULL"]
+  D --> E["Region-only rows with no customer"]
+  B --> F["UNION"]
+  E --> F
+  F --> G["Full outer join result"]
+```
+*A UNION of a LEFT JOIN with the right-only rows reproduces a FULL OUTER JOIN.*
+
 ## 7. Check yourself
 
 - What are the three union-compatibility rules? Where do the result's column names come from?
